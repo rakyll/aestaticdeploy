@@ -3,6 +3,7 @@
 package main
 
 import (
+	"bytes"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -10,19 +11,6 @@ import (
 	"os/exec"
 	"path/filepath"
 )
-
-const appYamlTmpl = `runtime: python27
-api_version: 1
-threadsafe: true
-
-handlers:{{ range $key, $path := . }}
-- url: /{{$key}}
-  static_files: public/{{$path}}
-  upload: public/{{$path}}
-{{ end }}
-- url: /.*
-  static_dir: public
-`
 
 func main() {
 	tmpl, _ := template.New("app.yaml").Parse(appYamlTmpl)
@@ -59,6 +47,8 @@ func main() {
 	if err := exec.Command("cp", "-rf", ".", filepath.Join(tmp, "public")).Run(); err != nil {
 		log.Fatal("cannot copy files to deployment tmp directory")
 	}
+
+	checkGcloud()
 	cmd := exec.Command("gcloud", "app", "deploy")
 	cmd.Dir = tmp
 	cmd.Stdin = os.Stdin
@@ -68,3 +58,27 @@ func main() {
 		log.Fatal(err)
 	}
 }
+
+func checkGcloud() {
+	out, err := exec.Command("which", "gcloud").CombinedOutput()
+	if err != nil {
+		log.Fatal("Google Cloud SDK is not installed, see https://cloud.google.com/sdk/downloads.")
+	}
+	out, err = exec.Command("gcloud", "auth", "list").CombinedOutput()
+	if err != nil || !bytes.ContainsAny(out, "ACTIVE") {
+		log.Fatal("Google Cloud SDK has no authorized accounts, did you run `gcloud auth login`?")
+	}
+}
+
+const appYamlTmpl = `runtime: python27
+api_version: 1
+threadsafe: true
+
+handlers:{{ range $key, $path := . }}
+- url: /{{$key}}
+  static_files: public/{{$path}}
+  upload: public/{{$path}}
+{{ end }}
+- url: /.*
+  static_dir: public
+`
