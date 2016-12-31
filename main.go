@@ -14,17 +14,17 @@ import (
 
 func main() {
 	tmpl, _ := template.New("app.yaml").Parse(appYamlTmpl)
-	indexes := make(map[string]string)
+	var indexes []string
 	filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
 		if info.IsDir() {
 			return nil
 		}
 		if info.Name() == "index.html" {
-			dir := filepath.Dir(path)
-			if dir == "." {
-				dir = ""
+			websitePath := filepath.Dir(path)
+			if websitePath == "." {
+				return nil // add index.html manually
 			}
-			indexes[dir] = path
+			indexes = append(indexes, websitePath)
 		}
 		return nil
 	})
@@ -74,11 +74,30 @@ const appYamlTmpl = `runtime: python27
 api_version: 1
 threadsafe: true
 
-handlers:{{ range $key, $path := . }}
-- url: /{{$key}}
-  static_files: public/{{$path}}
-  upload: public/{{$path}}
-{{ end }}
-- url: /.*
-  static_dir: public
+handlers:
+- url: /(.*\.ico)
+  mime_type: image/x-icon
+  static_files: public\1
+  upload: public/(.*\.ico)
+  expiration: "7d"
+
+# index files
+- url: /(.*)/
+  static_files: public/\1/index.html
+  upload: (.*)/index.html
+
+- url: /img
+  static_dir: public/img
+
+- url: /css
+  static_dir: public/css
+
+- url: /att
+  static_dir: public/att
+
+# site root
+- url: /
+  static_files: public/index.html
+  upload: public/index.html
+  expiration: "15m"
 `
