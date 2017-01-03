@@ -95,6 +95,12 @@ handlers:
 - url: /att
   static_dir: public/att
 
+# feed
+- url: /index.xml
+  static_files: public/index.xml
+  upload: public/index.xml
+  expiration: "15m"
+
 # site root
 - url: /
   static_files: public/index.html
