@@ -79,7 +79,6 @@ handlers:
   mime_type: image/x-icon
   static_files: public\1
   upload: public/(.*\.ico)
-  expiration: "7d"
 
 # index files
 - url: /(.*)/
